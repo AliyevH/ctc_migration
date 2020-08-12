@@ -8,6 +8,17 @@ sourceDB = SourceDB()
 destinationDB = DestinationDB()
 
 
+def get_type(x):
+    return {
+        'str': str,
+        'string': str,
+
+        'int': int,
+        'integer': int,
+
+        'float': float
+    }.get(x)
+
 def column_to_column():
     ROWS = 0
     UPDATED_ROWS = 0
@@ -29,11 +40,13 @@ def column_to_column():
             for row in source_rows:
                 ROWS += 1
                 data = {}
+
                 for mc in migration_columns:
                     if mc.get("type_cast"):
+                        column_class_type = get_type(mc.get("type_cast"))
                         temp = getattr(row, mc.get("sourceColumn"))
                         try:
-                            setattr(row, mc.get("sourceColumn"), type(mc.get("type_cast"))(temp))
+                            setattr(row, mc.get("sourceColumn"), column_class_type(temp))
                         except Exception as err:
                             setattr(row, mc.get("sourceColumn"), None)
                     data.update({mc.get("destinationColumn"): getattr(row, mc.get("sourceColumn"))})
@@ -54,11 +67,8 @@ def column_to_column():
 
     print(ROWS, UPDATED_ROWS)
 
-# column_to_column()
 
-if __name__ == "__main__":
-    print(sys.argv)
+column_to_column()
 
 
 
-# column_to_column("Cars.number", "automobiles_automobile.gos_number")
