@@ -7,7 +7,7 @@ with open('HISTORY.md') as history_file:
     HISTORY = history_file.read()
 
 setup_args = dict(
-    name='column_to_column migration',
+    name='ctc-migration',
     version='0.1.0',
     description='Useful tool to migrate database with different schemas',
     long_description_content_type="text/markdown",
@@ -17,8 +17,8 @@ setup_args = dict(
     author='Hasan Aliyev',
     author_email='hasan.aliyev.555@gmail.com',
     keywords=['mysql', 'sqlalchemy', 'migration'],
-    url='https://github.com/ncthuc/elastictools',
-    download_url='https://pypi.org/project//'
+    url='https://github.com/AliyevH/ctc_migration',
+    download_url='https://pypi.org/project/ctc_migration/'
 )
 
 install_requires = [
