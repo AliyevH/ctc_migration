@@ -4,10 +4,13 @@ from db import config
 from time import sleep
 import sys
 
+# Source and Destination DB Initialization with session
 sourceDB = SourceDB()
 destinationDB = DestinationDB()
 
-
+###########################
+# Get class type of input #
+###########################
 def get_type(x):
     return {
         'str': str,
@@ -19,22 +22,34 @@ def get_type(x):
         'float': float
     }.get(x)
 
-def column_to_column():
-    ROWS = 0
-    UPDATED_ROWS = 0
 
+###########################
+# Migration Function from one table column into another one #
+###########################
+def column_to_column():
+
+    # View rows and updated rows at the end of function
+    ROWS = 0
+    INSERTED_ROWS = 0
+
+    # Loop in migration tables from yaml list 'migrationTables'
     for mt in config.migrationTables:
         for k, v in mt.items():
+
+            # Get source table name 'SourceTableName'
+            # Get destination table name 'DestinationTableName'
             source_table_name = v.get("SourceTableName")
             destination_table_name = v.get("DestinationTableName")
             unique_key = v.get("uniqueKey")
 
+            # Get migration columns
             migration_columns = v.get("MigrationColumns")
 
+            # Get source and destination table object from base.classes automap
             source_table = getattr(sourceDB.base.classes, source_table_name)
             destination_table = getattr(destinationDB.base.classes, destination_table_name)
 
-
+            # Get all rows from sourceDB session
             source_rows = sourceDB.session.query(source_table).all()
 
             for row in source_rows:
@@ -42,30 +57,44 @@ def column_to_column():
                 data = {}
 
                 for mc in migration_columns:
+
+                    # If type_cast specified convert data into specified type
                     if mc.get("type_cast"):
+
+                        # Get type of class that the data will be converted [int, str, float]
                         column_class_type = get_type(mc.get("type_cast"))
                         temp = getattr(row, mc.get("sourceColumn"))
+
+                        # Try to convert data intp specified type (type_cast)
                         try:
                             setattr(row, mc.get("sourceColumn"), column_class_type(temp))
+
+                        # If get exception set None
                         except Exception as err:
                             setattr(row, mc.get("sourceColumn"), None)
+
+                    # Update data dictionary
                     data.update({mc.get("destinationColumn"): getattr(row, mc.get("sourceColumn"))})
 
+                # Try to insert into new table
                 try:
                     inserting_data = destination_table(**data)
                     destinationDB.session.add(inserting_data)
                     destinationDB.session.commit()
-                    UPDATED_ROWS += 1
+                    INSERTED_ROWS += 1
+                # If Exception rollback transaction
                 except Exception as err:
                     destinationDB.session.rollback()
                     print(err)
                     print(data)
                     sleep(60)
 
+    # At the end close database sessions
     sourceDB.session.close()
     destinationDB.session.close()
 
-    print(ROWS, UPDATED_ROWS)
+    # View how many rows exists and how many rows inserted
+    print(ROWS, INSERTED_ROWS)
 
 
 column_to_column()
