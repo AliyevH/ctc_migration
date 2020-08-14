@@ -3,6 +3,7 @@ from db import DestinationDB
 from db import config
 from time import sleep
 import sys
+from datetime import datetime
 
 # Source and Destination DB Initialization with session
 sourceDB = SourceDB()
@@ -19,7 +20,8 @@ def get_type(x):
         'int': int,
         'integer': int,
 
-        'float': float
+        'float': float,
+        'datetime': datetime
     }.get(x)
 
 
@@ -49,52 +51,66 @@ def column_to_column():
             source_table = getattr(sourceDB.base.classes, source_table_name)
             destination_table = getattr(destinationDB.base.classes, destination_table_name)
 
-            # Get all rows from sourceDB session
-            source_rows = sourceDB.session.query(source_table).all()
+            print(dir(source_table))
+            print(source_table.capacity.property.__dir__())
+            print(source_table.capacity.property.columns)
 
-            for row in source_rows:
-                ROWS += 1
-                data = {}
-
-                for mc in migration_columns:
-
-                    # If type_cast specified convert data into specified type
-                    if mc.get("type_cast"):
-
-                        # Get type of class that the data will be converted [int, str, float]
-                        column_class_type = get_type(mc.get("type_cast"))
-                        temp = getattr(row, mc.get("sourceColumn"))
-
-                        # Try to convert data intp specified type (type_cast)
-                        try:
-                            setattr(row, mc.get("sourceColumn"), column_class_type(temp))
-
-                        # If get exception set None
-                        except Exception as err:
-                            setattr(row, mc.get("sourceColumn"), None)
-
-                    # Update data dictionary
-                    data.update({mc.get("destinationColumn"): getattr(row, mc.get("sourceColumn"))})
-
-                # Try to insert into new table
-                try:
-                    inserting_data = destination_table(**data)
-                    destinationDB.session.add(inserting_data)
-                    destinationDB.session.commit()
-                    INSERTED_ROWS += 1
-                # If Exception rollback transaction
-                except Exception as err:
-                    destinationDB.session.rollback()
-                    print(err)
-                    print(data)
-                    sleep(60)
-
-    # At the end close database sessions
-    sourceDB.session.close()
-    destinationDB.session.close()
-
-    # View how many rows exists and how many rows inserted
-    print(ROWS, INSERTED_ROWS)
+    #         # Get all rows from sourceDB session
+    #         source_rows = sourceDB.session.query(source_table).all()
+    #
+    #         for row in source_rows:
+    #             ROWS += 1
+    #             data = {}
+    #
+    #             for mc in migration_columns:
+    #
+    #                 # If type_cast specified convert data into specified type
+    #                 if mc.get("type_cast"):
+    #                     if 'datetime' in mc.get("type_cast"):
+    #                         destination_datetime, *format = mc.get("type_cast").split("=")
+    #                         column_class_type = get_type(destination_datetime)
+    #
+    #                     # Get type of class that the data will be converted [int, str, float]
+    #                     else:
+    #                         column_class_type = get_type(mc.get("type_cast"))
+    #
+    #                     temp = getattr(row, mc.get("sourceColumn"))
+    #
+    #                     # Try to convert data into specified type (type_cast)
+    #                     try:
+    #                         if format:
+    #                             print(column_class_type(temp, format[0]))
+    #                             setattr(row, mc.get("sourceColumn"), column_class_type(temp, format[0]))
+    #                             print(row)
+    #
+    #                         setattr(row, mc.get("sourceColumn"), column_class_type(temp))
+    #
+    #                     # If get exception set None
+    #                     except Exception as err:
+    #                         setattr(row, mc.get("sourceColumn"), None)
+    #
+    #                 # Update data dictionary
+    #                 data.update({mc.get("destinationColumn"): getattr(row, mc.get("sourceColumn"))})
+    #
+    #             # Try to insert into new table
+    #             # try:
+    #             #     inserting_data = destination_table(**data)
+    #             #     destinationDB.session.add(inserting_data)
+    #             #     destinationDB.session.commit()
+    #             #     INSERTED_ROWS += 1
+    #             # # If Exception rollback transaction
+    #             # except Exception as err:
+    #             #     destinationDB.session.rollback()
+    #             #     print(err)
+    #             #     print(data)
+    #             #     sleep(60)
+    #
+    # # At the end close database sessions
+    # sourceDB.session.close()
+    # destinationDB.session.close()
+    #
+    # # View how many rows exists and how many rows inserted
+    # print(ROWS, INSERTED_ROWS)
 
 
 column_to_column()
